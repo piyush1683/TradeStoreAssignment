@@ -1,12 +1,21 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+# =============================================================================
+# Trade Store Application - CI/CD Pipeline
+# =============================================================================
+# This workflow builds, tests, and deploys the Trade Store microservices
+# application. It includes security scanning, secret management, and artifact
+# publishing.
+#
+# Features:
+# - Multi-module Gradle build
+# - Secret replacement for configuration files
+# - OSV-Scanner security vulnerability scanning
+# - Build artifact publishing to repository
+# - Comprehensive reporting
+# =============================================================================
 
-name: Java CI with Gradle
+name: Trade Store CI/CD Pipeline
 
+# Trigger workflow on push to main branch and pull requests
 on:
   push:
     branches: [ "main" ]
@@ -14,27 +23,58 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # ==========================================================================
+  # Main Build Job
+  # ==========================================================================
+  # This job handles the complete build pipeline including:
+  # 1. Environment setup (Java, Gradle)
+  # 2. Secret replacement in configuration files
+  # 3. Project compilation and testing
+  # 4. Security vulnerability scanning
+  # 5. Build artifact generation and publishing
+  # ==========================================================================
   build:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # Required to push build artifacts back to repository
 
     steps:
+    # ========================================================================
+    # Step 1: Checkout Repository Code
+    # ========================================================================
     - uses: actions/checkout@v4
+
+    # ========================================================================
+    # Step 2: Setup Java Development Environment
+    # ========================================================================
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
-        distribution: 'temurin'
+        distribution: 'temurin'  # Eclipse Temurin JDK (recommended)
 
-    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
+    # ========================================================================
+    # Step 3: Configure Gradle Build Environment
+    # ========================================================================
+    # Sets up Gradle with dependency caching for faster builds
     # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
+    # ========================================================================
+    # Step 4: Replace Placeholder Secrets with Actual Values
+    # ========================================================================
+    # This step replaces placeholder values in application.properties files
+    # with actual secrets from GitHub Secrets. This allows us to:
+    # - Keep sensitive data out of the repository
+    # - Use different secrets for different environments
+    # - Maintain security while enabling automated builds
+    # ========================================================================
     - name: Replace secrets in application.properties
       run: |
+        echo "Replacing placeholder secrets with actual values..."
+        
         # Replace database password in trade-validation-storage
         sed -i "s|{password}|${{ secrets.DB_PASSWORD }}|g" trade-validation-storage/src/main/resources/application.properties
         
@@ -52,30 +92,50 @@ jobs:
         
         # Replace Kafka password in trade-ingestion
         sed -i "s|{kafka-password}|${{ secrets.KAFKA_PASSWORD }}|g" trade-ingestion/src/main/resources/application.properties
+        
+        echo "Secret replacement completed successfully"
 
+    # ========================================================================
+    # Step 5: Build the Project
+    # ========================================================================
+    # Compiles all modules, runs tests, and creates JAR artifacts
+    # Uses bash to run gradlew to avoid permission issues
+    # ========================================================================
     - name: Build with Gradle Wrapper
       run: bash ./gradlew build
 
+    # ========================================================================
+    # Step 6: Install OSV-Scanner for Security Vulnerability Scanning
+    # ========================================================================
+    # OSV-Scanner is Google's open-source vulnerability scanner that checks
+    # dependencies against known security vulnerabilities. This step:
+    # 1. Downloads the latest OSV-Scanner binary
+    # 2. Validates the download is a proper binary (not HTML error page)
+    # 3. Installs it system-wide for use in subsequent steps
+    # 4. Falls back to known working version if latest fails
+    # 5. Creates dummy script if all installation attempts fail
+    # ========================================================================
     - name: Install OSV-Scanner
       run: |
         echo "Installing OSV-Scanner using direct binary download..."
         
-        # Get the latest release version
+        # Get the latest release version from GitHub API
         LATEST_VERSION=$(curl -s https://api.github.com/repos/google/osv-scanner/releases/latest | jq -r '.tag_name' | sed 's/v//')
         echo "Latest OSV-Scanner version: $LATEST_VERSION"
         
-        # Try different download URLs
+        # Define multiple possible download URLs (GitHub release naming varies)
         DOWNLOAD_URLS=(
           "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_${LATEST_VERSION}_linux_amd64"
           "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_linux_amd64"
           "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64"
         )
         
+        # Try each download URL until one succeeds
         DOWNLOAD_SUCCESS=false
         for url in "${DOWNLOAD_URLS[@]}"; do
           echo "Trying URL: $url"
           if curl -L "$url" -o osv-scanner && [ -f "osv-scanner" ]; then
-            # Check if it's a valid binary (not HTML/text)
+            # Verify downloaded file is actually a binary (not HTML error page)
             if file osv-scanner | grep -q "ELF"; then
               echo "Download successful from: $url"
               chmod +x osv-scanner
@@ -89,9 +149,9 @@ jobs:
           fi
         done
         
+        # Fallback: Try a known working version if dynamic download fails
         if [ "$DOWNLOAD_SUCCESS" = false ]; then
           echo "All download attempts failed, trying alternative approach..."
-          # Alternative: Use a known working version
           curl -L "https://github.com/google/osv-scanner/releases/download/v1.7.0/osv-scanner_1.7.0_linux_amd64" -o osv-scanner
           if [ -f "osv-scanner" ] && file osv-scanner | grep -q "ELF"; then
             chmod +x osv-scanner
@@ -100,15 +160,26 @@ jobs:
           fi
         fi
         
+        # Verify installation or create dummy script to prevent workflow failure
         if [ "$DOWNLOAD_SUCCESS" = true ]; then
           echo "Testing OSV-Scanner installation..."
           osv-scanner --version
         else
-          echo "Failed to install OSV-Scanner, skipping vulnerability scan"
+          echo "Failed to install OSV-Scanner, creating dummy script to prevent workflow failure"
           echo "osv-scanner --version" > /usr/local/bin/osv-scanner
           chmod +x /usr/local/bin/osv-scanner
         fi
 
+    # ========================================================================
+    # Step 7: Execute Security Vulnerability Scan
+    # ========================================================================
+    # Runs OSV-Scanner to detect security vulnerabilities in dependencies.
+    # This step:
+    # 1. Creates comprehensive reports in multiple formats (JSON, table, markdown)
+    # 2. Analyzes results for critical vulnerabilities
+    # 3. Fails the build if critical vulnerabilities are found
+    # 4. Generates summary reports for easy review
+    # ========================================================================
     - name: Run OSV-Scanner
       run: |
         echo "Running OSV-Scanner for vulnerability detection..."
@@ -132,17 +203,15 @@ jobs:
           echo "Critical vulnerabilities found: $critical_count"
           
           # Create summary report
-          cat > reports/security/scan-summary.txt << EOF
-OSV-Scanner Security Scan Summary
-================================
-Scan Date: $(date)
-Build Number: ${{ github.run_number }}
-Commit SHA: ${{ github.sha }}
-Branch: ${{ github.ref_name }}
-
-Critical Vulnerabilities: $critical_count
-
-EOF
+          echo "OSV-Scanner Security Scan Summary" > reports/security/scan-summary.txt
+          echo "================================" >> reports/security/scan-summary.txt
+          echo "Scan Date: $(date)" >> reports/security/scan-summary.txt
+          echo "Build Number: ${{ github.run_number }}" >> reports/security/scan-summary.txt
+          echo "Commit SHA: ${{ github.sha }}" >> reports/security/scan-summary.txt
+          echo "Branch: ${{ github.ref_name }}" >> reports/security/scan-summary.txt
+          echo "" >> reports/security/scan-summary.txt
+          echo "Critical Vulnerabilities: $critical_count" >> reports/security/scan-summary.txt
+          echo "" >> reports/security/scan-summary.txt
           
           if [ "$critical_count" -gt 0 ]; then
             echo "❌ CRITICAL VULNERABILITIES DETECTED! Build will fail."
@@ -167,9 +236,18 @@ EOF
         echo "Generated security reports:"
         ls -la reports/security/
 
+    # ========================================================================
+    # Step 8: Prepare Build Artifacts Directory
+    # ========================================================================
     - name: Create target directory
       run: mkdir -p target
 
+    # ========================================================================
+    # Step 9: Collect Build Artifacts and Reports
+    # ========================================================================
+    # Copies all JAR files and security reports to the target directory
+    # for publishing to the repository
+    # ========================================================================
     - name: Copy JAR files to target directory
       run: |
         # Copy JAR files from all modules
@@ -187,6 +265,11 @@ EOF
         echo "Copied security reports:"
         ls -la target/security/ 2>/dev/null || echo "No security reports found"
 
+    # ========================================================================
+    # Step 10: Generate Build Information File
+    # ========================================================================
+    # Creates a comprehensive build info file with metadata about the build
+    # ========================================================================
     - name: Create build info file
       run: |
         echo "Build Information" > target/build-info.txt
@@ -200,11 +283,20 @@ EOF
         echo "JAR Files:" >> target/build-info.txt
         ls -la target/*.jar >> target/build-info.txt 2>/dev/null || echo "No JAR files found" >> target/build-info.txt
 
+    # ========================================================================
+    # Step 11: Configure Git for Artifact Publishing
+    # ========================================================================
     - name: Configure Git
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
+    # ========================================================================
+    # Step 12: Publish Build Artifacts to Repository
+    # ========================================================================
+    # Commits and pushes all build artifacts (JARs, reports, build info)
+    # back to the repository for easy access and distribution
+    # ========================================================================
     - name: Commit and push build artifacts
       run: |
         git add target/

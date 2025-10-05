@@ -133,18 +133,18 @@ jobs:
         
         # Try to get Gradle dependencies with better error handling
         echo "Getting Gradle dependencies..."
-        ./gradlew dependencies --configuration compileClasspath 2>&1 | tee reports/security/gradle-dependencies.txt
+        bash ./gradlew dependencies --configuration compileClasspath 2>&1 | tee reports/security/gradle-dependencies.txt
         echo "Dependencies file size: $(wc -l < reports/security/gradle-dependencies.txt)"
         
         # Try to get dependency tree
         echo "Getting dependency tree..."
-        ./gradlew dependencies 2>&1 | tee reports/security/gradle-dependency-tree.txt
+        bash ./gradlew dependencies 2>&1 | tee reports/security/gradle-dependency-tree.txt
         echo "Dependency tree file size: $(wc -l < reports/security/gradle-dependency-tree.txt)"
         
         # Try alternative Gradle commands
         echo "Trying alternative Gradle commands..."
-        ./gradlew :trade-common:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-common-deps.txt || true
-        ./gradlew :trade-ingestion:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-ingestion-deps.txt || true
+        bash ./gradlew :trade-common:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-common-deps.txt || true
+        bash ./gradlew :trade-ingestion:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-ingestion-deps.txt || true
         
         # Create a simple dependency list for OSV-Scanner
         echo "Creating dependency list for OSV-Scanner..."
@@ -173,6 +173,42 @@ jobs:
           
           echo "Manual dependency list:"
           cat reports/security/manual-dependency-list.txt || true
+        fi
+        
+        # Create a proper dependency file for OSV-Scanner
+        echo "Creating OSV-Scanner compatible dependency file..."
+        if [ -s "reports/security/manual-dependency-list.txt" ]; then
+          # Create a simple text file with one dependency per line
+          cp reports/security/manual-dependency-list.txt reports/security/osv-dependencies.txt
+          
+          # Also create a JSON-like format that OSV-Scanner might understand
+          echo "{" > reports/security/dependencies.json
+          echo "  \"dependencies\": [" >> reports/security/dependencies.json
+          cat reports/security/manual-dependency-list.txt | while read dep; do
+            if [ -n "$dep" ]; then
+              echo "    \"$dep\"," >> reports/security/dependencies.json
+            fi
+          done
+          echo "  ]" >> reports/security/dependencies.json
+          echo "}" >> reports/security/dependencies.json
+          
+          echo "Created OSV-Scanner dependency files:"
+          echo "Text format:"
+          cat reports/security/osv-dependencies.txt || true
+          echo "JSON format:"
+          cat reports/security/dependencies.json || true
+        fi
+        
+        # Try scanning the dependency files we created
+        echo "Trying to scan dependency files..."
+        if [ -f "reports/security/osv-dependencies.txt" ]; then
+          echo "Scanning text dependency file..."
+          osv-scanner --lockfile reports/security/osv-dependencies.txt --format=json --output=reports/security/deps-text-scan.json || true
+        fi
+        
+        if [ -f "reports/security/dependencies.json" ]; then
+          echo "Scanning JSON dependency file..."
+          osv-scanner --lockfile reports/security/dependencies.json --format=json --output=reports/security/deps-json-scan.json || true
         fi
         
         # Try basic directory scan

@@ -17,7 +17,7 @@ application.log
 spring.log
 
 # Maven #
-target/
+# target/ - Commented out to allow build artifacts
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -38,6 +38,12 @@ gradle-app.setting
 .project
 .classpath
 .settings/
+
+# Allow build artifacts in target directory
+!target/
+!target/*.jar
+!target/*.txt
+!target/build-info.txt
 
 # IntelliJ IDEA #
 .idea/

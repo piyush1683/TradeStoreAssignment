@@ -57,7 +57,13 @@ jobs:
       run: bash ./gradlew build
 
     - name: Install OSV-Scanner
-      uses: google/osv-scanner-action@v1
+      run: |
+        echo "Installing OSV-Scanner..."
+        curl -L https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_1.7.0_linux_amd64.tar.gz -o osv-scanner.tar.gz
+        tar -xzf osv-scanner.tar.gz
+        sudo mv osv-scanner /usr/local/bin/
+        chmod +x /usr/local/bin/osv-scanner
+        osv-scanner --version
 
     - name: Run OSV-Scanner
       run: |

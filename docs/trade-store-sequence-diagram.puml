@@ -1,140 +1,82 @@
 @startuml
 !theme plain
-title Trade Store - Trade Processing Sequence Diagram
+title Trade Store - Processing Sequence
 
-' Define participants
-participant "Client" as client "#lightblue"
-participant "Trade Ingestion\nService (8081)" as ingestion "#2E8B57"
-participant "Kafka Cluster" as kafka "#FF6347"
-participant "Trade Capture\nService (8082)" as capture "#4682B4"
-participant "DynamoDB\n(Event Store)" as dynamodb "#8B4513"
-participant "Trade Validation\nService (8083)" as validation "#9370DB"
-participant "PostgreSQL\n(Projection Store)" as postgres "#8B4513"
-participant "Trade Common\nValidation" as common "#lightgray"
+participant "Client" as client
+participant "Trade Ingestion Service" as ingestion
+participant "Kafka Cluster" as kafka
+participant "Trade Capture Service" as capture
+participant "DynamoDB" as dynamodb
+participant "Trade Validation Service" as validation
+participant "PostgreSQL" as postgres
+participant "Trade Common" as common
 
-== Trade Ingestion & Processing ==
+== Trade Processing Flow ==
 
-client -> ingestion: POST /api/trades
-note right: Trade data with validation rules
+client -> ingestion : POST /api/trades
+note right : Trade data with validation rules
 
-ingestion -> ingestion: Validate Trade Data
-ingestion -> ingestion: Generate Request ID
-ingestion -> kafka: Publish Trade Event
-note right: topic: trade_ingestion\nkey: tradeId\nvalue: Trade object
+ingestion -> ingestion : Validate Trade Data
+ingestion -> ingestion : Generate Request ID
+ingestion -> kafka : Publish Trade Event
+note right : topic: trade_ingestion
 
-kafka -> capture: Consume Trade Event
-note right: @KafkaListener(topics = "trade_ingestion")
+kafka -> capture : Consume Trade Event
+note right : @KafkaListener
 
-capture -> capture: Convert Trade to TradeModel
-capture -> dynamodb: Store Trade Event
-note right: PutItemRequest to trade-event-store
+capture -> capture : Convert to TradeModel
+capture -> dynamodb : Store Trade Event
+note right : PutItemRequest
 
-dynamodb --> capture: Event Stored Successfully
+dynamodb --> capture : Event Stored
 
-capture -> validation: updateTradeProjectStore(trade)
-note right: REST call to validation service
+capture -> validation : updateTradeProjectStore
+note right : REST call
 
-validation -> common: validateTrade(trade)
-note right: Unified validation service
+validation -> common : validateTrade
+note right : Unified validation
 
-common -> common: Check Version Rules
-note right: @ValidateTradeVersion\n- Reject lower versions\n- Accept same/higher versions
+common -> common : Check Version Rules
+common -> common : Check Maturity Date
+common -> common : Check Expiry Status
 
-common -> common: Check Maturity Date
-note right: Reject past maturity dates
-
-common -> common: Check Expiry Status
-note right: @ValidateTradeExpiry\n- Check if already expired
-
-common --> validation: Validation Result
+common --> validation : Validation Result
 
 alt Trade is Valid
-    validation -> postgres: Insert Trade Projection
-    note right: Store in trade_projection table
-    postgres --> validation: Projection Stored
-    validation --> capture: Success Response
-    capture --> kafka: Acknowledge Message
+    validation -> postgres : Insert Trade Projection
+    postgres --> validation : Projection Stored
+    validation --> capture : Success Response
 else Trade is Invalid
-    validation -> postgres: Insert Trade Exception
-    note right: Store in trade_exception table\nwith failure reason
-    postgres --> validation: Exception Stored
-    validation --> capture: Validation Failed
-    capture --> kafka: Acknowledge Message
+    validation -> postgres : Insert Trade Exception
+    postgres --> validation : Exception Stored
+    validation --> capture : Validation Failed
 end
 
-capture --> client: Trade Processing Complete
+capture --> client : Processing Complete
 
-== Trade Exception Query ==
+== Query Flow ==
 
-client -> ingestion: GET /api/trades/exceptions?requestId=xxx
-ingestion -> validation: Query Trade Exceptions
-validation -> postgres: SELECT from trade_exception
-postgres --> validation: Exception Records
-validation --> ingestion: Exception Data
-ingestion --> client: HTTP Response with Exceptions
+client -> ingestion : GET /api/trades/exceptions
+ingestion -> validation : Query Exceptions
+validation -> postgres : SELECT from trade_exception
+postgres --> validation : Exception Records
+validation --> ingestion : Exception Data
+ingestion --> client : HTTP Response
 
-== Automated Expiry Processing ==
+== Expiry Processing ==
 
 loop Every 5 minutes
-    validation -> validation: @Scheduled Expiry Check
-    validation -> postgres: Query Expired Trades
-    postgres --> validation: Expired Trade List
+    validation -> validation : @Scheduled Expiry Check
+    validation -> postgres : Query Expired Trades
+    postgres --> validation : Expired Trade List
     
     loop For each expired trade
-        validation -> common: checkAndMarkTradeAsExpired(trade)
-        common -> common: Validate Expiry Date
-        common --> validation: Expiry Confirmed
-        validation -> postgres: UPDATE expired = 'Y'
-        postgres --> validation: Trade Marked as Expired
+        validation -> common : checkAndMarkTradeAsExpired
+        common -> common : Validate Expiry Date
+        common --> validation : Expiry Confirmed
+        validation -> postgres : UPDATE expired = Y
+        postgres --> validation : Trade Marked as Expired
     end
 end
-
-== Error Scenarios ==
-
-alt Kafka Connection Error
-    ingestion -> kafka: Publish Trade Event
-    kafka --> ingestion: Connection Failed
-    ingestion -> client: HTTP 500 Error
-    note right: Failed to publish trade to Kafka
-end
-
-alt DynamoDB Error
-    capture -> dynamodb: Store Trade Event
-    dynamodb --> capture: Storage Failed
-    capture -> capture: Log Error
-    capture -> client: Processing Failed
-    note right: Failed to persist trade to DynamoDB
-end
-
-alt Validation Service Error
-    capture -> validation: updateTradeProjectStore(trade)
-    validation --> capture: Service Unavailable
-    capture -> capture: Log Warning
-    capture -> client: Trade Stored (Event Only)
-    note right: TradeProjectionService not available
-end
-
-note over client, common
-**Key Features:**
-- Event Sourcing with DynamoDB
-- CQRS with PostgreSQL projections
-- Unified validation with AOP
-- Automated expiry processing
-- Comprehensive error handling
-end note
-
-note over ingestion, kafka
-**Message Flow:**
-- Asynchronous processing
-- Guaranteed delivery
-- Scalable architecture
-end note
-
-note over validation, postgres
-**Data Consistency:**
-- ACID transactions
-- Eventual consistency
-- Audit trail maintenance
-end note
 
 @enduml

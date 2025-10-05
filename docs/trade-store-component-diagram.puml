@@ -1,117 +1,59 @@
-@startuml Trade Store Component Diagram
+@startuml
 !theme plain
-title Trade Store Microservices Architecture - Component Diagram
-
-' Define colors
-!define PRIMARY_COLOR #2E8B57
-!define SECONDARY_COLOR #4682B4
-!define DATABASE_COLOR #8B4513
-!define MESSAGE_COLOR #FF6347
-!define VALIDATION_COLOR #9370DB
+title Trade Store - Component Architecture
 
 ' External Systems
-cloud "External Clients" as clients #lightblue
-cloud "Kafka Cluster\n(Confluent Cloud)" as kafka #MESSAGE_COLOR
-cloud "AWS DynamoDB\n(Event Store)" as dynamodb #DATABASE_COLOR
-cloud "PostgreSQL\n(Projection Store)" as postgres #DATABASE_COLOR
+cloud "External Clients" as clients
+cloud "Kafka Cluster" as kafka
+cloud "AWS DynamoDB" as dynamodb
+cloud "PostgreSQL" as postgres
 
-' Microservices
-package "Trade Store Microservices" {
-    
-    ' Trade Ingestion Service
-    component "Trade Ingestion Service\n(Port 8081)" as ingestion #PRIMARY_COLOR {
-        [REST API Controller] as ingestionAPI
-        [Kafka Producer] as kafkaProducer
-        [Trade Query Service] as queryService
-        [File Ingestion] as fileIngestion
-    }
-    
-    ' Trade Capture Service  
-    component "Trade Capture Service\n(Port 8082)" as capture #SECONDARY_COLOR {
-        [Kafka Consumer] as kafkaConsumer
-        [DynamoDB Persistence] as dynamoPersistence
-        [Trade Capture Service] as captureService
-    }
-    
-    ' Trade Validation & Storage Service
-    component "Trade Validation & Storage\n(Port 8083)" as validation #VALIDATION_COLOR {
-        [Trade Projection Service] as projectionService
-        [Trade Validation Service] as validationService
-        [Expiry Check Scheduler] as expiryScheduler
-        [PostgreSQL Persistence] as postgresPersistence
-    }
-    
-    ' Common Module
-    component "Trade Common Module" as common #lightgray {
-        [Trade Model] as tradeModel
-        [Trade Store Interface] as tradeStoreInterface
-        [Validation Annotations] as validationAnnotations
-        [Trade Validation Service] as commonValidationService
-        [Trade Validation Aspect] as validationAspect
-    }
+package "Trade Ingestion Service" {
+    [REST Controller] as restController
+    [Kafka Producer] as kafkaProducer
+    [Query Service] as queryService
 }
 
-' Data Storage
-database "Trade Event Store\n(DynamoDB)" as eventStore #DATABASE_COLOR
-database "Trade Projection Store\n(PostgreSQL)" as projectionStore #DATABASE_COLOR
-database "Trade Exception Store\n(PostgreSQL)" as exceptionStore #DATABASE_COLOR
+package "Trade Capture Service" {
+    [Kafka Consumer] as kafkaConsumer
+    [Trade Processor] as tradeProcessor
+    [DynamoDB Client] as dynamoClient
+}
 
-' Connections - External to Services
-clients --> ingestionAPI : "HTTP REST\nPOST /api/trades"
-clients --> queryService : "HTTP REST\nGET /api/trades/exceptions"
+package "Trade Validation Service" {
+    [Validation Engine] as validationEngine
+    [Projection Service] as projectionService
+    [Expiry Scheduler] as expiryScheduler
+}
 
-' Kafka Message Flow
-ingestion --> kafka : "Publish Trade Events\ntopic: trade_ingestion"
-kafka --> capture : "Consume Trade Events\ntopic: trade_ingestion"
+package "Trade Common Module" {
+    [Trade Model] as tradeModel
+    [Validation Annotations] as validationAnnotations
+    [Common Validation] as commonValidation
+}
 
-' Service to Service Communication
-capture --> validation : "REST Call\nupdateTradeProjectStore()"
+clients --> restController
+restController --> kafkaProducer
+kafkaProducer --> kafka
 
-' Data Persistence
-capture --> eventStore : "Store Trade Events\nDynamoDB"
-validation --> projectionStore : "Store Valid Trades\nPostgreSQL"
-validation --> exceptionStore : "Store Rejected Trades\nPostgreSQL"
+kafka --> kafkaConsumer
+kafkaConsumer --> tradeProcessor
+tradeProcessor --> dynamoClient
+dynamoClient --> dynamodb
 
-' Common Module Dependencies
-ingestion --> common : "Uses Trade Model"
-capture --> common : "Uses Trade Model\n& Validation Service"
-validation --> common : "Uses Trade Model\n& Validation Service"
+tradeProcessor --> validationEngine
+validationEngine --> projectionService
+projectionService --> postgres
 
-' Validation Flow
-validationService --> commonValidationService : "Delegates to\nUnified Validation"
-validationAspect --> validationAnnotations : "AOP Processing\n@ValidateTradeExpiry\n@ValidateTradeVersion"
+queryService --> postgres
+expiryScheduler --> postgres
 
-' Scheduled Tasks
-expiryScheduler --> projectionStore : "Periodic Expiry Check\n@Scheduled"
+validationEngine --> commonValidation
+tradeProcessor --> tradeModel
+restController --> tradeModel
 
-' Notes
-note right of kafka
-  **Message Topics:**
-  - trade_ingestion
-  - trade_validation
-  - trade_expiry
-end note
-
-note right of validation
-  **Validation Rules:**
-  1. Version Control
-  2. Maturity Date Check
-  3. Expiry Validation
-  4. Business Rule Engine
-end note
-
-note right of eventStore
-  **Event Sourcing:**
-  - Immutable trade events
-  - Complete audit trail
-  - High availability
-end note
-
-note right of projectionStore
-  **Read Models:**
-  - Trade projections
-  - Query optimization
-  - Business reporting
-end note
+note right of restController : Port 8081
+note right of tradeProcessor : Port 8082
+note right of validationEngine : Port 8083
 
 @enduml

@@ -1,0 +1,1 @@
+STATUS: FAILED - No scan results generated

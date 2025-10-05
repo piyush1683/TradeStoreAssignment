@@ -58,14 +58,16 @@ jobs:
 
     - name: Install OSV-Scanner
       run: |
-        echo "Installing OSV-Scanner using Docker method..."
+        echo "Installing OSV-Scanner using direct binary download..."
         
-        # Create a simple wrapper script for osv-scanner
-        cat > osv-scanner << 'EOF'
-        #!/bin/bash
-        docker run --rm -v "$(pwd):/src" -w /src gcr.io/osv-scanner/osv-scanner:latest "$@"
-        EOF
+        # Get the latest release version
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/google/osv-scanner/releases/latest | jq -r '.tag_name' | sed 's/v//')
+        echo "Latest OSV-Scanner version: $LATEST_VERSION"
         
+        # Download the binary directly (not as tar.gz)
+        curl -L "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_${LATEST_VERSION}_linux_amd64" -o osv-scanner
+        
+        # Make it executable and install
         chmod +x osv-scanner
         sudo mv osv-scanner /usr/local/bin/
         

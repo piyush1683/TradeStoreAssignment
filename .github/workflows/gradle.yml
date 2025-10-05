@@ -58,55 +58,19 @@ jobs:
 
     - name: Install OSV-Scanner
       run: |
-        echo "Installing OSV-Scanner..."
+        echo "Installing OSV-Scanner using Docker method..."
         
-        # Method 1: Try direct binary download
-        echo "Attempting direct binary download..."
-        LATEST_VERSION=$(curl -s https://api.github.com/repos/google/osv-scanner/releases/latest | jq -r '.tag_name' | sed 's/v//')
-        echo "Latest OSV-Scanner version: $LATEST_VERSION"
+        # Create a simple wrapper script for osv-scanner
+        cat > osv-scanner << 'EOF'
+        #!/bin/bash
+        docker run --rm -v "$(pwd):/src" -w /src gcr.io/osv-scanner/osv-scanner:latest "$@"
+        EOF
         
-        # Try different possible download URLs
-        DOWNLOAD_URLS=(
-          "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_${LATEST_VERSION}_linux_amd64.tar.gz"
-          "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_linux_amd64.tar.gz"
-          "https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64.tar.gz"
-        )
+        chmod +x osv-scanner
+        sudo mv osv-scanner /usr/local/bin/
         
-        DOWNLOAD_SUCCESS=false
-        for url in "${DOWNLOAD_URLS[@]}"; do
-          echo "Trying URL: $url"
-          if curl -L "$url" -o osv-scanner.tar.gz && [ -f "osv-scanner.tar.gz" ] && [ $(stat -c%s "osv-scanner.tar.gz") -gt 1000 ]; then
-            echo "Download successful from: $url"
-            tar -xzf osv-scanner.tar.gz
-            if [ -f "osv-scanner" ]; then
-              sudo mv osv-scanner /usr/local/bin/
-              chmod +x /usr/local/bin/osv-scanner
-              DOWNLOAD_SUCCESS=true
-              break
-            fi
-          fi
-        done
-        
-        # Method 2: If download failed, use go install with proper PATH
-        if [ "$DOWNLOAD_SUCCESS" = false ]; then
-          echo "Direct download failed, using go install..."
-          # Add Go bin to PATH
-          export PATH=$PATH:$(go env GOPATH)/bin
-          echo "Go bin path: $(go env GOPATH)/bin"
-          
-          # Install via go
-          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
-          
-          # Verify installation
-          if [ -f "$(go env GOPATH)/bin/osv-scanner" ]; then
-            echo "Go install successful, copying to /usr/local/bin/"
-            sudo cp "$(go env GOPATH)/bin/osv-scanner" /usr/local/bin/
-            chmod +x /usr/local/bin/osv-scanner
-          fi
-        fi
-        
-        # Verify final installation
-        echo "Verifying OSV-Scanner installation..."
+        # Test the installation
+        echo "Testing OSV-Scanner installation..."
         osv-scanner --version
 
     - name: Run OSV-Scanner

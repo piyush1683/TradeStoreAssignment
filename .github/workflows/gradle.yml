@@ -187,18 +187,48 @@ jobs:
         # Create reports directory
         mkdir -p reports/security
         
-        # Run OSV-Scanner with multiple output formats
-        osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json || true
-        osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt || true
-        osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md || true
+        # Debug: List files that OSV-Scanner should recognize
+        echo "Looking for dependency files..."
+        echo "Build.gradle files:"
+        find . -name "build.gradle*" -type f
+        echo "Gradle wrapper files:"
+        find . -name "gradle-wrapper.properties" -type f
+        echo "Lock files:"
+        find . -name "*.lock" -o -name "gradle.lockfile" -type f
         
-        # Check for critical vulnerabilities
-        if [ -f "reports/security/osv-scan-results.json" ]; then
+        # Run OSV-Scanner with multiple output formats
+        # Scan specific directories and files that contain dependencies
+        echo "Scanning for Java/Gradle dependencies..."
+        osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json --skip-git || true
+        osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt --skip-git || true
+        osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md --skip-git || true
+        
+        # Also try scanning specific build files
+        echo "Scanning build.gradle files specifically..."
+        find . -name "build.gradle*" -exec osv-scanner -r {} --format=json --output=reports/security/gradle-scan-results.json --skip-git \; || true
+        
+        # Try scanning with different approaches
+        echo "Trying alternative scan approaches..."
+        osv-scanner --lockfile gradle.lockfile --format=json --output=reports/security/lockfile-scan-results.json || true
+        osv-scanner --docker . --format=json --output=reports/security/docker-scan-results.json || true
+        
+        # Check for critical vulnerabilities in any generated result files
+        echo "Checking for scan results..."
+        ls -la reports/security/
+        
+        # Find any JSON result files
+        result_files=$(find reports/security -name "*.json" -type f)
+        echo "Found result files: $result_files"
+        
+        if [ -n "$result_files" ]; then
+          # Process the first available result file
+          result_file=$(echo "$result_files" | head -n1)
+          echo "Processing result file: $result_file"
           echo "OSV-Scanner results:"
-          cat reports/security/osv-scan-results.json
+          cat "$result_file"
           
           # Count critical vulnerabilities (severity: CRITICAL)
-          critical_count=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL")] | length' reports/security/osv-scan-results.json 2>/dev/null || echo "0")
+          critical_count=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL")] | length' "$result_file" 2>/dev/null || echo "0")
           
           echo "Critical vulnerabilities found: $critical_count"
           
@@ -216,11 +246,11 @@ jobs:
           if [ "$critical_count" -gt 0 ]; then
             echo "❌ CRITICAL VULNERABILITIES DETECTED! Build will fail."
             echo "Please review and fix the following critical vulnerabilities:"
-            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' reports/security/osv-scan-results.json 2>/dev/null || true
+            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' "$result_file" 2>/dev/null || true
             
             # Add critical vulnerabilities to summary
             echo "CRITICAL VULNERABILITIES FOUND:" >> reports/security/scan-summary.txt
-            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' reports/security/osv-scan-results.json 2>/dev/null >> reports/security/scan-summary.txt || true
+            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' "$result_file" 2>/dev/null >> reports/security/scan-summary.txt || true
             
             exit 1
           else

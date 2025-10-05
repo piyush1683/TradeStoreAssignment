@@ -122,34 +122,46 @@ jobs:
         # Create reports directory
         mkdir -p reports/security
         
-        # Debug: List files that OSV-Scanner should recognize
-        echo "Looking for dependency files..."
-        echo "Build.gradle files:"
-        find . -name "build.gradle*" -type f
-        echo "Gradle wrapper files:"
-        find . -name "gradle-wrapper.properties" -type f
-        echo "Lock files:"
-        find . -name "*.lock" -o -name "gradle.lockfile" -type f
-        
         # Check OSV-Scanner version and available options
         echo "OSV-Scanner version and help:"
         osv-scanner --version || true
-        osv-scanner --help | head -20 || true
+        echo "Available options:"
+        osv-scanner --help | grep -E "(lockfile|sbom|docker)" || true
         
-        # Run OSV-Scanner with basic directory scan
-        echo "Scanning for Java/Gradle dependencies..."
+        # Try to generate a dependency list first
+        echo "Generating dependency information..."
+        
+        # Try to get Gradle dependencies
+        echo "Getting Gradle dependencies..."
+        ./gradlew dependencies --configuration compileClasspath > reports/security/gradle-dependencies.txt || true
+        
+        # Try to get dependency tree
+        echo "Getting dependency tree..."
+        ./gradlew dependencies > reports/security/gradle-dependency-tree.txt || true
+        
+        # Create a simple dependency list for OSV-Scanner
+        echo "Creating dependency list for OSV-Scanner..."
+        if [ -f "reports/security/gradle-dependencies.txt" ]; then
+          # Extract just the dependency names and versions
+          grep -E "^[+]---|^[\\]---" reports/security/gradle-dependencies.txt | \
+          sed 's/^[+]--- //' | sed 's/^[\\]--- //' | \
+          grep -v "project :" | head -50 > reports/security/dependency-list.txt || true
+          
+          echo "Created dependency list:"
+          cat reports/security/dependency-list.txt || true
+        fi
+        
+        # Try scanning the generated dependency files
+        echo "Scanning dependency files..."
+        if [ -f "reports/security/dependency-list.txt" ]; then
+          osv-scanner --lockfile reports/security/dependency-list.txt --format=json --output=reports/security/deps-scan-results.json || true
+        fi
+        
+        # Try basic directory scan
+        echo "Basic directory scan..."
         osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json || true
         osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt || true
         osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md || true
-        
-        # Try scanning specific directories that might contain dependencies
-        echo "Scanning specific directories..."
-        osv-scanner -r .gradle --format=json --output=reports/security/gradle-dir-scan-results.json || true
-        osv-scanner -r build --format=json --output=reports/security/build-dir-scan-results.json || true
-        
-        # Try scanning with different file patterns
-        echo "Trying different scan approaches..."
-        osv-scanner -r . --format=json --output=reports/security/root-scan-results.json || true
         
         # Check for critical vulnerabilities in any generated result files
         echo "Checking for scan results..."

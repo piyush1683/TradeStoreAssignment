@@ -18,7 +18,7 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -55,6 +55,42 @@ jobs:
 
     - name: Build with Gradle Wrapper
       run: bash ./gradlew build
+
+    - name: Create target directory
+      run: mkdir -p target
+
+    - name: Copy JAR files to target directory
+      run: |
+        # Copy JAR files from all modules
+        find . -name "*.jar" -path "*/build/libs/*" -not -path "*/build/libs/*-plain.jar" -exec cp {} target/ \;
+        
+        # List copied files for verification
+        echo "Copied JAR files:"
+        ls -la target/
+
+    - name: Create build info file
+      run: |
+        echo "Build Information" > target/build-info.txt
+        echo "=================" >> target/build-info.txt
+        echo "Build Date: $(date)" >> target/build-info.txt
+        echo "Build Number: ${{ github.run_number }}" >> target/build-info.txt
+        echo "Commit SHA: ${{ github.sha }}" >> target/build-info.txt
+        echo "Branch: ${{ github.ref_name }}" >> target/build-info.txt
+        echo "Workflow: ${{ github.workflow }}" >> target/build-info.txt
+        echo "" >> target/build-info.txt
+        echo "JAR Files:" >> target/build-info.txt
+        ls -la target/*.jar >> target/build-info.txt 2>/dev/null || echo "No JAR files found" >> target/build-info.txt
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Commit and push build artifacts
+      run: |
+        git add target/
+        git commit -m "Build artifacts from workflow run ${{ github.run_number }} [skip ci]" || exit 0
+        git push
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.

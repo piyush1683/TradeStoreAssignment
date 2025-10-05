@@ -131,33 +131,25 @@ jobs:
         echo "Lock files:"
         find . -name "*.lock" -o -name "gradle.lockfile" -type f
         
-        # Run OSV-Scanner with multiple output formats
-        # Scan specific directories and files that contain dependencies
+        # Check OSV-Scanner version and available options
+        echo "OSV-Scanner version and help:"
+        osv-scanner --version || true
+        osv-scanner --help | head -20 || true
+        
+        # Run OSV-Scanner with basic directory scan
         echo "Scanning for Java/Gradle dependencies..."
-        osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json --skip-git || true
-        osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt --skip-git || true
-        osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md --skip-git || true
+        osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json || true
+        osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt || true
+        osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md || true
         
-        # Also try scanning specific build files
-        echo "Scanning build.gradle files specifically..."
-        find . -name "build.gradle*" -exec osv-scanner -r {} --format=json --output=reports/security/gradle-scan-results.json --skip-git \; || true
+        # Try scanning specific directories that might contain dependencies
+        echo "Scanning specific directories..."
+        osv-scanner -r .gradle --format=json --output=reports/security/gradle-dir-scan-results.json || true
+        osv-scanner -r build --format=json --output=reports/security/build-dir-scan-results.json || true
         
-        # Try scanning with different approaches
-        echo "Trying alternative scan approaches..."
-        
-        # Try scanning with lockfile if it exists
-        if [ -f "gradle.lockfile" ]; then
-          osv-scanner --lockfile gradle.lockfile --format=json --output=reports/security/lockfile-scan-results.json || true
-        fi
-        
-        # Try scanning individual build.gradle files
-        for build_file in $(find . -name "build.gradle*" -type f); do
-          echo "Scanning $build_file"
-          osv-scanner --lockfile "$build_file" --format=json --output="reports/security/$(basename "$build_file")-scan-results.json" || true
-        done
-        
-        # Try scanning with package manager detection
-        osv-scanner --package-manager gradle --format=json --output=reports/security/gradle-pm-scan-results.json || true
+        # Try scanning with different file patterns
+        echo "Trying different scan approaches..."
+        osv-scanner -r . --format=json --output=reports/security/root-scan-results.json || true
         
         # Check for critical vulnerabilities in any generated result files
         echo "Checking for scan results..."

@@ -144,8 +144,20 @@ jobs:
         
         # Try scanning with different approaches
         echo "Trying alternative scan approaches..."
-        osv-scanner --lockfile gradle.lockfile --format=json --output=reports/security/lockfile-scan-results.json || true
-        osv-scanner --docker . --format=json --output=reports/security/docker-scan-results.json || true
+        
+        # Try scanning with lockfile if it exists
+        if [ -f "gradle.lockfile" ]; then
+          osv-scanner --lockfile gradle.lockfile --format=json --output=reports/security/lockfile-scan-results.json || true
+        fi
+        
+        # Try scanning individual build.gradle files
+        for build_file in $(find . -name "build.gradle*" -type f); do
+          echo "Scanning $build_file"
+          osv-scanner --lockfile "$build_file" --format=json --output="reports/security/$(basename "$build_file")-scan-results.json" || true
+        done
+        
+        # Try scanning with package manager detection
+        osv-scanner --package-manager gradle --format=json --output=reports/security/gradle-pm-scan-results.json || true
         
         # Check for critical vulnerabilities in any generated result files
         echo "Checking for scan results..."

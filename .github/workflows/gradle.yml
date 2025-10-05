@@ -36,22 +36,22 @@ jobs:
     - name: Replace secrets in application.properties
       run: |
         # Replace database password in trade-validation-storage
-        sed -i "s/{password}/${{ secrets.DB_PASSWORD }}/g" trade-validation-storage/src/main/resources/application.properties
+        sed -i "s|{password}|${{ secrets.DB_PASSWORD }}|g" trade-validation-storage/src/main/resources/application.properties
         
         # Replace database password in trade-common
-        sed -i "s/{password}/${{ secrets.DB_PASSWORD }}/g" trade-common/src/main/resources/application.properties
+        sed -i "s|{password}|${{ secrets.DB_PASSWORD }}|g" trade-common/src/main/resources/application.properties
         
         # Replace database password in trade-ingestion
-        sed -i "s/{password}/${{ secrets.DB_PASSWORD }}/g" trade-ingestion/src/main/resources/application.properties
+        sed -i "s|{password}|${{ secrets.DB_PASSWORD }}|g" trade-ingestion/src/main/resources/application.properties
         
         # Replace Kafka password in trade-capture
-        sed -i "s/{kafka-password}/${{ secrets.KAFKA_PASSWORD }}/g" trade-capture/src/main/resources/application.properties
+        sed -i "s|{kafka-password}|${{ secrets.KAFKA_PASSWORD }}|g" trade-capture/src/main/resources/application.properties
         
         # Replace AWS secret key in trade-capture
-        sed -i "s/{aws-secret-key}/${{ secrets.AWS_SECRET_KEY }}/g" trade-capture/src/main/resources/application.properties
+        sed -i "s|{aws-secret-key}|${{ secrets.AWS_SECRET_KEY }}|g" trade-capture/src/main/resources/application.properties
         
         # Replace Kafka password in trade-ingestion
-        sed -i "s/{kafka-password}/${{ secrets.KAFKA_PASSWORD }}/g" trade-ingestion/src/main/resources/application.properties
+        sed -i "s|{kafka-password}|${{ secrets.KAFKA_PASSWORD }}|g" trade-ingestion/src/main/resources/application.properties
 
     - name: Build with Gradle Wrapper
       run: ./gradlew build

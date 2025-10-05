@@ -1,1 +1,82 @@
-/home/runner/work/_temp/f7869cb6-8329-4d4f-84f8-246503be4026.sh: line 27: ./gradlew: Permission denied
+
+> Task :trade-common:dependencies
+
+------------------------------------------------------------
+Project ':trade-common'
+------------------------------------------------------------
+
+compileClasspath - Compile classpath for source set 'main'.
++--- com.fasterxml.jackson.core:jackson-annotations:2.17.2
+|    \--- com.fasterxml.jackson:jackson-bom:2.17.2
+|         \--- com.fasterxml.jackson.core:jackson-annotations:2.17.2 (c)
++--- org.springframework.boot:spring-boot-starter-data-jdbc:3.2.0
+|    +--- org.springframework.boot:spring-boot-starter-jdbc:3.2.0
+|    |    +--- org.springframework.boot:spring-boot-starter:3.2.0
+|    |    |    +--- org.springframework.boot:spring-boot:3.2.0
+|    |    |    |    +--- org.springframework:spring-core:6.1.1
+|    |    |    |    |    \--- org.springframework:spring-jcl:6.1.1
+|    |    |    |    \--- org.springframework:spring-context:6.1.1
+|    |    |    |         +--- org.springframework:spring-aop:6.1.1
+|    |    |    |         |    +--- org.springframework:spring-beans:6.1.1
+|    |    |    |         |    |    \--- org.springframework:spring-core:6.1.1 (*)
+|    |    |    |         |    \--- org.springframework:spring-core:6.1.1 (*)
+|    |    |    |         +--- org.springframework:spring-beans:6.1.1 (*)
+|    |    |    |         +--- org.springframework:spring-core:6.1.1 (*)
+|    |    |    |         +--- org.springframework:spring-expression:6.1.1
+|    |    |    |         |    \--- org.springframework:spring-core:6.1.1 (*)
+|    |    |    |         \--- io.micrometer:micrometer-observation:1.12.0
+|    |    |    |              \--- io.micrometer:micrometer-commons:1.12.0
+|    |    |    +--- org.springframework.boot:spring-boot-autoconfigure:3.2.0
+|    |    |    |    \--- org.springframework.boot:spring-boot:3.2.0 (*)
+|    |    |    +--- org.springframework.boot:spring-boot-starter-logging:3.2.0
+|    |    |    |    +--- ch.qos.logback:logback-classic:1.4.11
+|    |    |    |    |    +--- ch.qos.logback:logback-core:1.4.11
+|    |    |    |    |    \--- org.slf4j:slf4j-api:2.0.7 -> 2.0.9
+|    |    |    |    +--- org.apache.logging.log4j:log4j-to-slf4j:2.21.1
+|    |    |    |    |    +--- org.apache.logging.log4j:log4j-api:2.21.1
+|    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.36 -> 2.0.9
+|    |    |    |    \--- org.slf4j:jul-to-slf4j:2.0.9
+|    |    |    |         \--- org.slf4j:slf4j-api:2.0.9
+|    |    |    +--- jakarta.annotation:jakarta.annotation-api:2.1.1
+|    |    |    +--- org.springframework:spring-core:6.1.1 (*)
+|    |    |    \--- org.yaml:snakeyaml:2.2
+|    |    +--- com.zaxxer:HikariCP:5.0.1
+|    |    |    \--- org.slf4j:slf4j-api:1.7.30 -> 2.0.9
+|    |    \--- org.springframework:spring-jdbc:6.1.1
+|    |         +--- org.springframework:spring-beans:6.1.1 (*)
+|    |         +--- org.springframework:spring-core:6.1.1 (*)
+|    |         \--- org.springframework:spring-tx:6.1.1
+|    |              +--- org.springframework:spring-beans:6.1.1 (*)
+|    |              \--- org.springframework:spring-core:6.1.1 (*)
+|    \--- org.springframework.data:spring-data-jdbc:3.2.0
+|         +--- org.springframework.data:spring-data-relational:3.2.0
+|         |    +--- org.springframework.data:spring-data-commons:3.2.0
+|         |    |    +--- org.springframework:spring-core:6.1.0 -> 6.1.1 (*)
+|         |    |    +--- org.springframework:spring-beans:6.1.0 -> 6.1.1 (*)
+|         |    |    \--- org.slf4j:slf4j-api:2.0.2 -> 2.0.9
+|         |    +--- org.springframework:spring-tx:6.1.0 -> 6.1.1 (*)
+|         |    +--- org.springframework:spring-context:6.1.0 -> 6.1.1 (*)
+|         |    +--- org.springframework:spring-beans:6.1.0 -> 6.1.1 (*)
+|         |    +--- org.springframework:spring-core:6.1.0 -> 6.1.1 (*)
+|         |    +--- com.github.jsqlparser:jsqlparser:4.6
+|         |    \--- org.slf4j:slf4j-api:2.0.2 -> 2.0.9
+|         +--- org.springframework.data:spring-data-commons:3.2.0 (*)
+|         +--- org.springframework:spring-tx:6.1.0 -> 6.1.1 (*)
+|         +--- org.springframework:spring-context:6.1.0 -> 6.1.1 (*)
+|         +--- org.springframework:spring-beans:6.1.0 -> 6.1.1 (*)
+|         +--- org.springframework:spring-jdbc:6.1.0 -> 6.1.1 (*)
+|         +--- org.springframework:spring-core:6.1.0 -> 6.1.1 (*)
+|         \--- org.slf4j:slf4j-api:2.0.2 -> 2.0.9
++--- org.springframework:spring-context:6.1.0 -> 6.1.1 (*)
++--- org.springframework:spring-aop:6.1.0 -> 6.1.1 (*)
++--- org.aspectj:aspectjweaver:1.9.20
+\--- org.postgresql:postgresql:42.7.1
+
+(c) - A dependency constraint, not a dependency. The dependency affected by the constraint occurs elsewhere in the tree.
+(*) - Indicates repeated occurrences of a transitive dependency subtree. Gradle expands transitive dependency subtrees only once per project; repeat occurrences only display the root of the subtree, followed by this annotation.
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+BUILD SUCCESSFUL in 783ms
+1 actionable task: 1 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

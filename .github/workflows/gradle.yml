@@ -131,17 +131,24 @@ jobs:
         # Try to generate a dependency list first
         echo "Generating dependency information..."
         
-        # Try to get Gradle dependencies
+        # Try to get Gradle dependencies with better error handling
         echo "Getting Gradle dependencies..."
-        ./gradlew dependencies --configuration compileClasspath > reports/security/gradle-dependencies.txt || true
+        ./gradlew dependencies --configuration compileClasspath 2>&1 | tee reports/security/gradle-dependencies.txt
+        echo "Dependencies file size: $(wc -l < reports/security/gradle-dependencies.txt)"
         
         # Try to get dependency tree
         echo "Getting dependency tree..."
-        ./gradlew dependencies > reports/security/gradle-dependency-tree.txt || true
+        ./gradlew dependencies 2>&1 | tee reports/security/gradle-dependency-tree.txt
+        echo "Dependency tree file size: $(wc -l < reports/security/gradle-dependency-tree.txt)"
+        
+        # Try alternative Gradle commands
+        echo "Trying alternative Gradle commands..."
+        ./gradlew :trade-common:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-common-deps.txt || true
+        ./gradlew :trade-ingestion:dependencies --configuration compileClasspath 2>&1 | tee reports/security/trade-ingestion-deps.txt || true
         
         # Create a simple dependency list for OSV-Scanner
         echo "Creating dependency list for OSV-Scanner..."
-        if [ -f "reports/security/gradle-dependencies.txt" ]; then
+        if [ -s "reports/security/gradle-dependencies.txt" ]; then
           # Extract just the dependency names and versions
           grep -E "^[+]---|^[\\]---" reports/security/gradle-dependencies.txt | \
           sed 's/^[+]--- //' | sed 's/^[\\]--- //' | \
@@ -149,12 +156,23 @@ jobs:
           
           echo "Created dependency list:"
           cat reports/security/dependency-list.txt || true
+        else
+          echo "No dependencies found in gradle-dependencies.txt"
+          echo "File contents:"
+          cat reports/security/gradle-dependencies.txt || true
         fi
         
-        # Try scanning the generated dependency files
-        echo "Scanning dependency files..."
-        if [ -f "reports/security/dependency-list.txt" ]; then
-          osv-scanner --lockfile reports/security/dependency-list.txt --format=json --output=reports/security/deps-scan-results.json || true
+        # Create a manual dependency list if Gradle commands failed
+        if [ ! -s "reports/security/dependency-list.txt" ]; then
+          echo "Creating manual dependency list from build.gradle files..."
+          # Extract dependencies from build.gradle files
+          find . -name "build.gradle*" -exec grep -h "implementation\|api\|compile" {} \; | \
+          grep -v "//" | grep -v "project(" | \
+          sed 's/.*["\x27]\([^"\x27]*\):\([^"\x27]*\):\([^"\x27]*\)["\x27].*/\1:\2:\3/' | \
+          sort | uniq > reports/security/manual-dependency-list.txt || true
+          
+          echo "Manual dependency list:"
+          cat reports/security/manual-dependency-list.txt || true
         fi
         
         # Try basic directory scan

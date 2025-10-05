@@ -1,0 +1,158 @@
+@startuml Trade Store Deployment Diagram
+!theme plain
+title Trade Store System - Deployment Diagram
+
+' Define colors
+!define AWS_COLOR #FF9900
+!define SERVICE_COLOR #2E8B57
+!define DATABASE_COLOR #8B4513
+!define MESSAGE_COLOR #FF6347
+
+' Cloud Infrastructure
+cloud "AWS Cloud" as aws #AWS_COLOR {
+    
+    ' Availability Zones
+    rectangle "Availability Zone 1" as az1 #lightblue {
+        rectangle "Application Tier" as app1 {
+            [Trade Ingestion Service\nInstance 1] as ingestion1 #SERVICE_COLOR
+            [Trade Capture Service\nInstance 1] as capture1 #SERVICE_COLOR
+            [Trade Validation Service\nInstance 1] as validation1 #SERVICE_COLOR
+        }
+        
+        rectangle "Data Tier" as data1 {
+            [PostgreSQL\nPrimary] as postgres1 #DATABASE_COLOR
+        }
+    }
+    
+    rectangle "Availability Zone 2" as az2 #lightblue {
+        rectangle "Application Tier" as app2 {
+            [Trade Ingestion Service\nInstance 2] as ingestion2 #SERVICE_COLOR
+            [Trade Capture Service\nInstance 2] as capture2 #SERVICE_COLOR
+            [Trade Validation Service\nInstance 2] as validation2 #SERVICE_COLOR
+        }
+        
+        rectangle "Data Tier" as data2 {
+            [PostgreSQL\nReplica] as postgres2 #DATABASE_COLOR
+        }
+    }
+    
+    ' Managed Services
+    rectangle "Managed Services" as managed #lightyellow {
+        [DynamoDB\nGlobal Tables] as dynamodb #DATABASE_COLOR
+        [Kafka Cluster\nConfluent Cloud] as kafka #MESSAGE_COLOR
+        [Elastic Load Balancer] as elb #lightgray
+        [Auto Scaling Groups] as asg #lightgray
+        [CloudWatch\nMonitoring] as cloudwatch #lightgray
+    }
+}
+
+' External Services
+cloud "External Services" as external #lightcyan {
+    [Client Applications] as clients
+    [External Systems] as externalSystems
+    [Monitoring Tools] as monitoring
+}
+
+' On-Premises (if applicable)
+rectangle "On-Premises" as onprem #lightgray {
+    [Development Environment] as dev
+    [CI/CD Pipeline] as cicd
+    [Local Testing] as local
+}
+
+' Network Connections
+clients --> elb : "HTTPS/REST API"
+externalSystems --> elb : "API Integration"
+elb --> ingestion1 : "Load Balanced"
+elb --> ingestion2 : "Load Balanced"
+
+' Service Communication
+ingestion1 --> kafka : "Publish Events"
+ingestion2 --> kafka : "Publish Events"
+kafka --> capture1 : "Consume Events"
+kafka --> capture2 : "Consume Events"
+
+capture1 --> dynamodb : "Store Events"
+capture2 --> dynamodb : "Store Events"
+
+capture1 --> validation1 : "REST Call"
+capture2 --> validation2 : "REST Call"
+
+validation1 --> postgres1 : "Read/Write"
+validation2 --> postgres1 : "Read/Write"
+postgres1 --> postgres2 : "Replication"
+
+' Monitoring and Management
+cloudwatch --> ingestion1 : "Metrics"
+cloudwatch --> capture1 : "Metrics"
+cloudwatch --> validation1 : "Metrics"
+cloudwatch --> postgres1 : "Metrics"
+cloudwatch --> dynamodb : "Metrics"
+cloudwatch --> kafka : "Metrics"
+
+monitoring --> cloudwatch : "Dashboards"
+
+' Development and Deployment
+dev --> cicd : "Code Push"
+cicd --> aws : "Deploy Services"
+local --> aws : "Testing"
+
+' Auto Scaling
+asg --> ingestion1 : "Scale Out/In"
+asg --> capture1 : "Scale Out/In"
+asg --> validation1 : "Scale Out/In"
+
+' Service Ports
+note right of ingestion1
+  **Port Configuration:**
+  - Trade Ingestion: 8081
+  - Trade Capture: 8082
+  - Trade Validation: 8083
+end note
+
+' Database Configuration
+note right of postgres1
+  **Database Configuration:**
+  - Primary: Read/Write
+  - Replica: Read Only
+  - Connection Pooling
+  - Backup Strategy
+end note
+
+note right of dynamodb
+  **DynamoDB Configuration:**
+  - Global Tables
+  - Auto Scaling
+  - Point-in-time Recovery
+  - Encryption at Rest
+end note
+
+' Security Configuration
+note bottom of aws
+  **Security Features:**
+  - VPC with Private Subnets
+  - Security Groups
+  - IAM Roles and Policies
+  - SSL/TLS Encryption
+  - Network ACLs
+end note
+
+' Scaling Configuration
+note left of asg
+  **Auto Scaling:**
+  - CPU-based scaling
+  - Memory-based scaling
+  - Custom metrics
+  - Health checks
+end note
+
+' Deployment Notes
+note over external, onprem
+  **Deployment Strategy:**
+  - Blue-Green Deployment
+  - Rolling Updates
+  - Canary Releases
+  - Automated Testing
+end note
+
+@enduml

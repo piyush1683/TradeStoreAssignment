@@ -44,6 +44,8 @@ gradle-app.setting
 !target/*.jar
 !target/*.txt
 !target/build-info.txt
+!target/security/
+!target/security/*
 
 # IntelliJ IDEA #
 .idea/

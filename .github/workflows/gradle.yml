@@ -112,29 +112,60 @@ jobs:
     - name: Run OSV-Scanner
       run: |
         echo "Running OSV-Scanner for vulnerability detection..."
-        osv-scanner -r . --format=json --output=osv-scan-results.json || true
+        
+        # Create reports directory
+        mkdir -p reports/security
+        
+        # Run OSV-Scanner with multiple output formats
+        osv-scanner -r . --format=json --output=reports/security/osv-scan-results.json || true
+        osv-scanner -r . --format=table --output=reports/security/osv-scan-results.txt || true
+        osv-scanner -r . --format=markdown --output=reports/security/osv-scan-results.md || true
         
         # Check for critical vulnerabilities
-        if [ -f "osv-scan-results.json" ]; then
+        if [ -f "reports/security/osv-scan-results.json" ]; then
           echo "OSV-Scanner results:"
-          cat osv-scan-results.json
+          cat reports/security/osv-scan-results.json
           
           # Count critical vulnerabilities (severity: CRITICAL)
-          critical_count=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL")] | length' osv-scan-results.json 2>/dev/null || echo "0")
+          critical_count=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL")] | length' reports/security/osv-scan-results.json 2>/dev/null || echo "0")
           
           echo "Critical vulnerabilities found: $critical_count"
+          
+          # Create summary report
+          cat > reports/security/scan-summary.txt << EOF
+OSV-Scanner Security Scan Summary
+================================
+Scan Date: $(date)
+Build Number: ${{ github.run_number }}
+Commit SHA: ${{ github.sha }}
+Branch: ${{ github.ref_name }}
+
+Critical Vulnerabilities: $critical_count
+
+EOF
           
           if [ "$critical_count" -gt 0 ]; then
             echo "❌ CRITICAL VULNERABILITIES DETECTED! Build will fail."
             echo "Please review and fix the following critical vulnerabilities:"
-            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' osv-scan-results.json 2>/dev/null || true
+            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' reports/security/osv-scan-results.json 2>/dev/null || true
+            
+            # Add critical vulnerabilities to summary
+            echo "CRITICAL VULNERABILITIES FOUND:" >> reports/security/scan-summary.txt
+            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' reports/security/osv-scan-results.json 2>/dev/null >> reports/security/scan-summary.txt || true
+            
             exit 1
           else
             echo "✅ No critical vulnerabilities found."
+            echo "STATUS: PASSED - No critical vulnerabilities detected" >> reports/security/scan-summary.txt
           fi
         else
           echo "⚠️ No OSV-Scanner results file generated."
+          echo "STATUS: FAILED - No scan results generated" > reports/security/scan-summary.txt
         fi
+        
+        # List all generated reports
+        echo "Generated security reports:"
+        ls -la reports/security/
 
     - name: Create target directory
       run: mkdir -p target
@@ -144,9 +175,17 @@ jobs:
         # Copy JAR files from all modules
         find . -name "*.jar" -path "*/build/libs/*" -not -path "*/build/libs/*-plain.jar" -exec cp {} target/ \;
         
+        # Copy security reports to target directory
+        if [ -d "reports/security" ]; then
+          cp -r reports/security target/
+          echo "Copied security reports to target directory"
+        fi
+        
         # List copied files for verification
         echo "Copied JAR files:"
         ls -la target/
+        echo "Copied security reports:"
+        ls -la target/security/ 2>/dev/null || echo "No security reports found"
 
     - name: Create build info file
       run: |

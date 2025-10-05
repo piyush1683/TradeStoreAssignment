@@ -1,0 +1,14 @@
+Build Information
+=================
+Build Date: Sun Oct  5 06:54:25 UTC 2025
+Build Number: 11
+Commit SHA: dbe1496f5eb72de8c2226f5531e7c4a2d846db11
+Branch: main
+Workflow: Java CI with Gradle
+
+JAR Files:
+-rw-r--r-- 1 runner runner      261 Oct  5 06:54 target/architecture-tests-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 62258449 Oct  5 06:54 target/trade-capture-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner    27366 Oct  5 06:54 target/trade-common-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 46236276 Oct  5 06:54 target/trade-ingestion-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 19710923 Oct  5 06:54 target/trade-validation-storage-0.0.1-SNAPSHOT.jar

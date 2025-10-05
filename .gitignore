@@ -155,6 +155,10 @@ jacoco.exec
 *.orig
 *.rej
 
+# Security scan results #
+osv-scan-results.json
+*.osv-results
+
 # Node modules (if any frontend components) #
 node_modules/
 npm-debug.log*

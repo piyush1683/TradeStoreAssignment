@@ -56,6 +56,36 @@ jobs:
     - name: Build with Gradle Wrapper
       run: bash ./gradlew build
 
+    - name: Install OSV-Scanner
+      uses: google/osv-scanner-action@v1
+
+    - name: Run OSV-Scanner
+      run: |
+        echo "Running OSV-Scanner for vulnerability detection..."
+        osv-scanner -r . --format=json --output=osv-scan-results.json || true
+        
+        # Check for critical vulnerabilities
+        if [ -f "osv-scan-results.json" ]; then
+          echo "OSV-Scanner results:"
+          cat osv-scan-results.json
+          
+          # Count critical vulnerabilities (severity: CRITICAL)
+          critical_count=$(jq '[.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL")] | length' osv-scan-results.json 2>/dev/null || echo "0")
+          
+          echo "Critical vulnerabilities found: $critical_count"
+          
+          if [ "$critical_count" -gt 0 ]; then
+            echo "❌ CRITICAL VULNERABILITIES DETECTED! Build will fail."
+            echo "Please review and fix the following critical vulnerabilities:"
+            jq -r '.results[]?.packages[]?.vulnerabilities[]? | select(.severity[]?.score == "CRITICAL") | "- \(.id): \(.summary // .details // "No description")"' osv-scan-results.json 2>/dev/null || true
+            exit 1
+          else
+            echo "✅ No critical vulnerabilities found."
+          fi
+        else
+          echo "⚠️ No OSV-Scanner results file generated."
+        fi
+
     - name: Create target directory
       run: mkdir -p target
 

@@ -59,11 +59,26 @@ jobs:
     - name: Install OSV-Scanner
       run: |
         echo "Installing OSV-Scanner..."
-        curl -L https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_1.7.0_linux_amd64.tar.gz -o osv-scanner.tar.gz
-        tar -xzf osv-scanner.tar.gz
-        sudo mv osv-scanner /usr/local/bin/
-        chmod +x /usr/local/bin/osv-scanner
-        osv-scanner --version
+        # Get the latest release version
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/google/osv-scanner/releases/latest | jq -r '.tag_name' | sed 's/v//')
+        echo "Latest OSV-Scanner version: $LATEST_VERSION"
+        
+        # Download the correct binary
+        curl -L "https://github.com/google/osv-scanner/releases/download/v${LATEST_VERSION}/osv-scanner_${LATEST_VERSION}_linux_amd64.tar.gz" -o osv-scanner.tar.gz
+        
+        # Verify download
+        if [ -f "osv-scanner.tar.gz" ] && [ $(stat -c%s "osv-scanner.tar.gz") -gt 1000 ]; then
+          echo "Download successful, extracting..."
+          tar -xzf osv-scanner.tar.gz
+          sudo mv osv-scanner /usr/local/bin/
+          chmod +x /usr/local/bin/osv-scanner
+          osv-scanner --version
+        else
+          echo "Download failed, trying alternative method..."
+          # Alternative: install via go install
+          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          osv-scanner --version
+        fi
 
     - name: Run OSV-Scanner
       run: |

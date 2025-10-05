@@ -93,6 +93,13 @@ application-secret.properties
 *-secret.properties
 *-local.properties
 
+# Trade Store Application Properties Files #
+# Ignore all application.properties files from all modules
+#trade-ingestion/src/main/resources/application.properties
+##trade-capture/src/main/resources/application.properties
+#trade-validation-storage/src/main/resources/application.properties
+#trade-common/src/main/resources/application.properties
+
 # Database files #
 *.db
 *.sqlite

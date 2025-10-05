@@ -1,0 +1,1 @@
+/home/runner/work/_temp/f7869cb6-8329-4d4f-84f8-246503be4026.sh: line 22: ./gradlew: Permission denied

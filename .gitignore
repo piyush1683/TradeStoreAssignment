@@ -156,7 +156,8 @@ jacoco.exec
 *.temp
 *.orig
 *.rej
-
+*.ps
+*.ps1
 # Security scan results #
 osv-scan-results.json
 *.osv-results

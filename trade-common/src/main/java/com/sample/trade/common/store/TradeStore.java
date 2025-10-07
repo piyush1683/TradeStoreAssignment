@@ -233,4 +233,51 @@ public class TradeStore {
                     rs.getTimestamp("created_at").toLocalDateTime());
         }, tradeId);
     }
+
+    /**
+     * Clean up test data for trade IDs starting with 3XXX
+     * This method is specifically for integration test cleanup
+     */
+    public void cleanupTestData() {
+        try {
+            // Delete from trade_exception table first (due to potential foreign key
+            // constraints)
+            String deleteExceptionsSql = "DELETE FROM trade_exception WHERE trade_id LIKE '3%'";
+            int exceptionCount = jdbcTemplate.update(deleteExceptionsSql);
+            logger.info("Cleaned up {} exception records for test data", exceptionCount);
+
+            // Delete from trade_projection table
+            String deleteProjectionsSql = "DELETE FROM trade_projection WHERE trade_id LIKE '3%'";
+            int projectionCount = jdbcTemplate.update(deleteProjectionsSql);
+            logger.info("Cleaned up {} projection records for test data", projectionCount);
+
+        } catch (Exception e) {
+            logger.error("Error during test data cleanup: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to cleanup test data", e);
+        }
+    }
+
+    /**
+     * Clean up test data for specific trade ID pattern
+     * 
+     * @param tradeIdPattern SQL LIKE pattern for trade IDs to delete
+     */
+    public void cleanupTestDataByPattern(String tradeIdPattern) {
+        try {
+            // Delete from trade_exception table first
+            String deleteExceptionsSql = "DELETE FROM trade_exception WHERE trade_id LIKE ?";
+            int exceptionCount = jdbcTemplate.update(deleteExceptionsSql, tradeIdPattern);
+            logger.info("Cleaned up {} exception records for pattern: {}", exceptionCount, tradeIdPattern);
+
+            // Delete from trade_projection table
+            String deleteProjectionsSql = "DELETE FROM trade_projection WHERE trade_id LIKE ?";
+            int projectionCount = jdbcTemplate.update(deleteProjectionsSql, tradeIdPattern);
+            logger.info("Cleaned up {} projection records for pattern: {}", projectionCount, tradeIdPattern);
+
+            logger.info("Test data cleanup completed for pattern: {}", tradeIdPattern);
+        } catch (Exception e) {
+            logger.error("Error during test data cleanup for pattern {}: {}", tradeIdPattern, e.getMessage(), e);
+            throw new RuntimeException("Failed to cleanup test data for pattern: " + tradeIdPattern, e);
+        }
+    }
 }

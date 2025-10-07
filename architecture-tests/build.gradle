@@ -16,14 +16,22 @@ repositories {
 }
 
 dependencies {
+    // JUnit 5 dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.3'
+    
+    // Project module dependencies (for model classes)
     testImplementation project(':trade-common')
-    testImplementation project(':trade-validation-storage')
-    testImplementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
-    testImplementation 'org.springframework:spring-context:6.1.0'
-    testImplementation 'org.springframework:spring-jdbc:6.1.0'
+    
+    // Spring Web for RestTemplate
+    testImplementation 'org.springframework:spring-web:6.1.0'
+    
+    // Jackson for JSON processing
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
+    
+    // Mockito for mocking
     testImplementation 'org.mockito:mockito-core:5.8.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
 }
@@ -31,5 +39,10 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     enabled = true
+}
+
+// Disable jar task since this is a test module
+tasks.named('jar') {
+    enabled = false
 }
 

@@ -55,9 +55,9 @@ jobs:
         
         echo "Secret replacement completed successfully"
 
-    # Build project
+    # Build project (excluding architecture-tests that require database)
     - name: Build with Gradle Wrapper
-      run: bash ./gradlew build
+      run: bash ./gradlew build -x :architecture-tests:test
 
     # Install OSV-Scanner
     - name: Install OSV-Scanner

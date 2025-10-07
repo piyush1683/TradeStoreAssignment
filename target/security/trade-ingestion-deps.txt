@@ -105,6 +105,6 @@ compileClasspath - Compile classpath for source set 'main'.
 
 A web-based, searchable dependency report is available by adding the --scan option.
 
-BUILD SUCCESSFUL in 983ms
+BUILD SUCCESSFUL in 1s
 1 actionable task: 1 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

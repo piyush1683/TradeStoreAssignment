@@ -1,14 +1,14 @@
 Build Information
 =================
-Build Date: Sun Oct  5 09:41:10 UTC 2025
-Build Number: 30
-Commit SHA: 3b07d6fc7b0cf8a7ced995e66211e7d5c036eab7
+Build Date: Tue Oct  7 14:59:30 UTC 2025
+Build Number: 33
+Commit SHA: 86676a0aeb513352a81b0d35c75c74edfcd01b8c
 Branch: main
 Workflow: Trade Store CI/CD Pipeline
 
 JAR Files:
--rw-r--r-- 1 runner runner      261 Oct  5 09:41 target/architecture-tests-0.0.1-SNAPSHOT.jar
--rw-r--r-- 1 runner runner 62258449 Oct  5 09:41 target/trade-capture-0.0.1-SNAPSHOT.jar
--rw-r--r-- 1 runner runner    27366 Oct  5 09:41 target/trade-common-0.0.1-SNAPSHOT.jar
--rw-r--r-- 1 runner runner 46236276 Oct  5 09:41 target/trade-ingestion-0.0.1-SNAPSHOT.jar
--rw-r--r-- 1 runner runner 19710923 Oct  5 09:41 target/trade-validation-storage-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner      261 Oct  7 14:57 target/architecture-tests-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 62251454 Oct  7 14:59 target/trade-capture-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner    20373 Oct  7 14:59 target/trade-common-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 46230256 Oct  7 14:59 target/trade-ingestion-0.0.1-SNAPSHOT.jar
+-rw-r--r-- 1 runner runner 19703929 Oct  7 14:59 target/trade-validation-storage-0.0.1-SNAPSHOT.jar

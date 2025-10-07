@@ -3,6 +3,7 @@ package com.sample.trade.ingestion;
 import com.sample.trade.common.model.Trade;
 import com.sample.trade.common.model.TradeException;
 import com.sample.trade.common.service.TradeQueryService;
+import com.sample.trade.common.store.TradeStore;
 import com.sample.trade.ingestion.api.TradeIngestionController;
 import com.sample.trade.ingestion.service.KafkaTradeIngestionService;
 
@@ -31,12 +32,15 @@ class TradeIngestionControllerUnitTest {
         @Mock
         private TradeQueryService tradeQueryService;
 
+        @Mock
+        private TradeStore tradeStore;
+
         private MockMvc mockMvc;
         private TradeIngestionController controller;
 
         @BeforeEach
         void setUp() {
-                controller = new TradeIngestionController(kafkaTradeIngestionService, tradeQueryService);
+                controller = new TradeIngestionController(kafkaTradeIngestionService, tradeQueryService, tradeStore);
                 mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
         }
 

@@ -2,38 +2,45 @@
 !theme plain
 title Trade Store - Component Architecture
 
-' External Systems
-cloud "External Clients" as clients
-cloud "Kafka Cluster" as kafka
+' External Systems 
+component "Trade Store External Clients" as clients
+cloud "Kafka Streaming Cluster" as kafka
 cloud "AWS DynamoDB" as dynamodb
 cloud "PostgreSQL" as postgres
 
 package "Trade Ingestion Service" {
     [REST Controller] as restController
+    [File Upload Handler] as fileHandler
     [Kafka Producer] as kafkaProducer
-    [Query Service] as queryService
+    [Trade Initial Validation Service] as initialValidation
+    [Query and Notification Service] as queryService
 }
 
 package "Trade Capture Service" {
     [Kafka Consumer] as kafkaConsumer
-    [Trade Processor] as tradeProcessor
+    [Trade Aggregate Processor] as tradeProcessor
     [DynamoDB Client] as dynamoClient
 }
 
-package "Trade Validation Service" {
+package "Trade Validation And Storage Service" {
     [Validation Engine] as validationEngine
-    [Projection Service] as projectionService
+    [Projection and Snapshot Service] as projectionService
     [Expiry Scheduler] as expiryScheduler
 }
 
 package "Trade Common Module" {
     [Trade Model] as tradeModel
     [Validation Annotations] as validationAnnotations
-    [Common Validation] as commonValidation
+    [Business Rules Validation] as commonValidation
 }
 
 clients --> restController
-restController --> kafkaProducer
+clients --> fileHandler
+clients --> queryService
+
+fileHandler --> initialValidation
+restController --> initialValidation
+initialValidation --> kafkaProducer
 kafkaProducer --> kafka
 
 kafka --> kafkaConsumer
@@ -41,7 +48,7 @@ kafkaConsumer --> tradeProcessor
 tradeProcessor --> dynamoClient
 dynamoClient --> dynamodb
 
-tradeProcessor --> validationEngine
+dynamodb --> validationEngine
 validationEngine --> projectionService
 projectionService --> postgres
 
@@ -49,11 +56,8 @@ queryService --> postgres
 expiryScheduler --> postgres
 
 validationEngine --> commonValidation
+commonValidation --> validationAnnotations : uses
 tradeProcessor --> tradeModel
 restController --> tradeModel
-
-note right of restController : Port 8081
-note right of tradeProcessor : Port 8082
-note right of validationEngine : Port 8083
 
 @enduml

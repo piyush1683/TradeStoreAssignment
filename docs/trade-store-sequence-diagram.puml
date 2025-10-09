@@ -1,6 +1,6 @@
 @startuml
 !theme plain
-title Trade Store - Processing Sequence
+title Trade Store - Processing Sequence using REST Handler
 
 participant "Client" as client
 participant "Trade Ingestion Service" as ingestion
@@ -24,27 +24,27 @@ note right : topic: trade_ingestion
 kafka -> capture : Consume Trade Event
 note right : @KafkaListener
 
-capture -> capture : Convert to TradeModel
+capture -> capture : Trade Aggregation
 capture -> dynamodb : Store Trade Event
 note right : PutItemRequest
 
 dynamodb --> capture : Event Stored
 
-capture -> validation : updateTradeProjectStore
-note right : REST call
+dynamodb -> validation : updateTradeProjectStore
+note right : DynamoDB Streams 
 
 validation -> common : validateTrade
-note right : Unified validation
+note right : Business Rules Validation
 
-common -> common : Check Version Rules
+common -> common : Check Version
 common -> common : Check Maturity Date
 common -> common : Check Expiry Status
 
 common --> validation : Validation Result
 
 alt Trade is Valid
-    validation -> postgres : Insert Trade Projection
-    postgres --> validation : Projection Stored
+    validation -> postgres : Insert Trade Projections
+    postgres --> validation : Projection Updated
     validation --> capture : Success Response
 else Trade is Invalid
     validation -> postgres : Insert Trade Exception
@@ -52,18 +52,27 @@ else Trade is Invalid
     validation --> capture : Validation Failed
 end
 
-capture --> client : Processing Complete
+capture --> client : Trade Status Notification
+
+== Notifications Flow ==
+
+client -> ingestion : GET /api/notifications
+ingestion -> validation : Get Notifications
+validation -> postgres : SELECT from trade_exception
+postgres --> validation : Notifications Records
+validation --> ingestion : Notifications Data
+ingestion --> client : HTTP Response
 
 == Query Flow ==
 
-client -> ingestion : GET /api/trades/exceptions
-ingestion -> validation : Query Exceptions
-validation -> postgres : SELECT from trade_exception
-postgres --> validation : Exception Records
-validation --> ingestion : Exception Data
+client -> ingestion : GET /api/trade/{tradeId}
+ingestion -> validation : Get Trade Status and data
+validation -> postgres : SELECT from trade_projection
+postgres --> validation : Trade status and data
+validation --> ingestion : Trade Data
 ingestion --> client : HTTP Response
 
-== Expiry Processing ==
+== Trade Expiry  ==
 
 loop Every 5 minutes
     validation -> validation : @Scheduled Expiry Check

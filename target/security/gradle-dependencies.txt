@@ -10,4 +10,4 @@ configuration 'compileClasspath' not found in configuration container for root p
 > Run with --scan to generate a Build Scan (Powered by Develocity).
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 941ms
+BUILD FAILED in 768ms

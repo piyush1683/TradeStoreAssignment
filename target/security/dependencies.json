@@ -2,6 +2,7 @@
   "dependencies": [
     "implementation 'org.springframework.boot:spring-boot-starter'",
     "implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'",
+    "implementation 'org.springframework.boot:spring-boot-starter-validation'",
     "implementation 'org.springframework.boot:spring-boot-starter-web'",
     "implementation 'org.springframework.kafka:spring-kafka'",
     "com.amazonaws:aws-java-sdk-dynamodb:1.12.565",
@@ -14,6 +15,7 @@
     "org.postgresql:postgresql:42.7.1",
     "org.projectlombok:lombok:1.18.30",
     "org.springframework.boot:spring-boot-starter-data-jdbc:3.2.0",
+    "org.springframework.boot:spring-boot-starter-validation:3.2.0",
     "org.springframework:spring-aop:6.1.0",
     "org.springframework:spring-context:6.1.0",
     "org.springframework:spring-jdbc:6.1.0",

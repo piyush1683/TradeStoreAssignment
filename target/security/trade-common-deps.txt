@@ -70,13 +70,20 @@ compileClasspath - Compile classpath for source set 'main'.
 +--- org.springframework:spring-context:6.1.0 -> 6.1.1 (*)
 +--- org.springframework:spring-aop:6.1.0 -> 6.1.1 (*)
 +--- org.aspectj:aspectjweaver:1.9.20
-\--- org.postgresql:postgresql:42.7.1
++--- org.postgresql:postgresql:42.7.1
+\--- org.springframework.boot:spring-boot-starter-validation:3.2.0
+     +--- org.springframework.boot:spring-boot-starter:3.2.0 (*)
+     +--- org.apache.tomcat.embed:tomcat-embed-el:10.1.16
+     \--- org.hibernate.validator:hibernate-validator:8.0.1.Final
+          +--- jakarta.validation:jakarta.validation-api:3.0.2
+          +--- org.jboss.logging:jboss-logging:3.4.3.Final
+          \--- com.fasterxml:classmate:1.5.1
 
 (c) - A dependency constraint, not a dependency. The dependency affected by the constraint occurs elsewhere in the tree.
 (*) - Indicates repeated occurrences of a transitive dependency subtree. Gradle expands transitive dependency subtrees only once per project; repeat occurrences only display the root of the subtree, followed by this annotation.
 
 A web-based, searchable dependency report is available by adding the --scan option.
 
-BUILD SUCCESSFUL in 772ms
+BUILD SUCCESSFUL in 798ms
 1 actionable task: 1 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.1.0/userguide/configuration_cache_enabling.html

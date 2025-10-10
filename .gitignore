@@ -158,6 +158,8 @@ jacoco.exec
 *.rej
 *.ps
 *.ps1
+# Specific scripts to ignore
+scripts/remove-secrets-simple.ps1
 # Security scan results #
 osv-scan-results.json
 *.osv-results

@@ -1,24 +1,45 @@
 package com.sample.trade.common.model;
 
-import java.time.LocalDate;
+import com.sample.trade.common.validation.MaturityDateValid;
+import com.sample.trade.common.validation.TradeExpiryValid;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-public class Trade implements Comparable<Trade> {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import java.time.LocalDate;
+
+@MaturityDateValid(failureMessage = "Trade maturity date is in the past and not acceptable")
+public class TradeRecord implements Comparable<TradeRecord> {
+    @NotBlank(message = "Trade ID cannot be blank")
     private String tradeId;
+
+    @Positive(message = "Version must be positive")
     private int version;
+
+    @NotBlank(message = "Counter Party ID cannot be blank")
     private String counterPartyId;
+
+    @NotBlank(message = "Book ID cannot be blank")
     private String bookId;
+
+    @NotNull(message = "Maturity date cannot be null")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "uuuu-MM-dd")
     private LocalDate maturityDate;
+
+    @NotNull(message = "Created date cannot be null")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "uuuu-MM-dd")
     private LocalDate createdDate;
+
     private String expired;
+
+    @NotBlank(message = "Request ID cannot be blank")
     private String requestId;
 
-    public Trade() {
+    public TradeRecord() {
     }
 
-    public Trade(String tradeId, int version, String counterPartyId, String bookId,
+    public TradeRecord(String tradeId, int version, String counterPartyId, String bookId,
             LocalDate maturityDate, LocalDate createdDate, String expired, String requestId) {
         this.tradeId = tradeId;
         this.version = version;
@@ -30,14 +51,7 @@ public class Trade implements Comparable<Trade> {
         this.requestId = requestId;
     }
 
-    public String getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
-
+    // Getters and Setters
     public String getTradeId() {
         return tradeId;
     }
@@ -94,54 +108,17 @@ public class Trade implements Comparable<Trade> {
         this.expired = expired;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof Trade)) {
-            return false;
-        }
-
-        Trade t1 = (Trade) obj;
-
-        if (this.tradeId.equals(t1.getTradeId()) &&
-                this.version == t1.getVersion() &&
-                this.bookId.equals(t1.getBookId()) &&
-                this.counterPartyId.equals(t1.getCounterPartyId()) &&
-                this.maturityDate.equals(t1.getMaturityDate()) &&
-                this.createdDate.equals(t1.getCreatedDate()) &&
-                this.expired.equals(t1.getExpired())) {
-
-            return true;
-        }
-
-        return false;
+    public String getRequestId() {
+        return requestId;
     }
 
-    @Override
-    public String toString() {
-        return "Trade [tradeId=" + tradeId + ", version=" + version + ", counterPartyId=" + counterPartyId + ", bookId="
-                + bookId + ", maturityDate=" + maturityDate + ", createdDate=" + createdDate + ", expired=" + expired
-                + "]";
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 
+    // Will implement later
     @Override
-    public int hashCode() {
-
-        int hash = 7;
-
-        hash = 19 * this.tradeId.hashCode();
-        hash = 19 * Integer.hashCode(this.version);
-        hash = 19 * this.bookId.hashCode();
-        hash = 19 * this.counterPartyId.hashCode();
-        hash = 19 * this.maturityDate.hashCode();
-        hash = 19 * this.createdDate.hashCode();
-        hash = 19 * this.expired.hashCode();
-
-        return hash;
-
-    }
-
-    @Override
-    public int compareTo(Trade other) {
+    public int compareTo(TradeRecord other) {
         int idCompare = this.tradeId.compareTo(other.tradeId);
         if (idCompare != 0) {
             return idCompare;

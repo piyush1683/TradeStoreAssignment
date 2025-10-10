@@ -1,6 +1,7 @@
 package com.sample.trade.validationstorage.service;
 
 import com.sample.trade.common.model.Trade;
+import com.sample.trade.common.model.TradeRecord;
 
 public interface TradeProjectionService {
 
@@ -8,5 +9,5 @@ public interface TradeProjectionService {
 
     public void updateTradeProjectStore(Trade tradeModel);
 
-    public boolean validateTrade();
+    public void validateTrade(Trade tradeRecord);
 }

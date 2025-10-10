@@ -1,5 +1,6 @@
 package com.sample.trade.validationstorage.service;
 
+import com.sample.trade.common.model.Trade;
 import com.sample.trade.common.store.TradeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,48 +11,60 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Scheduler component for checking and updating expired trades.
+ * 
+ * This component runs periodically to identify trades that have passed their
+ * maturity date and mark them as expired in the database.
+ * 
+ * @author piyush.agrawal
+ */
 @Component
 public class TradeExpiryCheckScheduler {
+
     private static final Logger logger = LoggerFactory.getLogger(TradeExpiryCheckScheduler.class);
 
     @Autowired
     private TradeStore tradeStore;
 
-    @Scheduled(fixedRate = 3000) // Run every 5 minutes
-    public void checkExpiry() {
+    @Scheduled(fixedRate = 3000) // run 3 seconds
+    public void checkAndUpdateExpiredTrades() {
         try {
-            logger.info("Starting trade expiry check at: {}", java.time.LocalDateTime.now());
+            logger.info("Starting scheduled trade expiry check...");
 
             // Get all active trades
-            List<String> activeTradeIds = tradeStore.getActiveTradeIds();
+            List<Trade> activeTrades = tradeStore.getTradesToExpire();
+            logger.info("Found {} active trades to check for expiry", activeTrades.size());
 
-            if (activeTradeIds.isEmpty()) {
-                logger.info("No active trades found for expiry check");
-                return;
-            }
-
-            int expiredCount = 0;
             LocalDate today = LocalDate.now();
+            int expiredCount = 0;
 
-            for (String tradeId : activeTradeIds) {
-                try {
-                    // Get trade details
-                    var trade = tradeStore.getTradeById(tradeId);
-                    if (trade != null && trade.getMaturityDate().isBefore(today)) {
-                        // Mark trade as expired
-                        tradeStore.markTradeAsExpired(tradeId);
-                        expiredCount++;
-                        logger.info("Marked trade as expired: {} (Maturity: {})", tradeId, trade.getMaturityDate());
-                    }
-                } catch (Exception e) {
-                    logger.error("Error checking expiry for trade {}: {}", tradeId, e.getMessage());
+            for (Trade trade : activeTrades) {
+                if (trade.getMaturityDate() != null && trade.getMaturityDate().isBefore(today)) {
+                    // Trade has expired
+                    trade.setExpired("Y");
+                    tradeStore.updateTradeExpiry(trade.getTradeId(), trade.getVersion(), trade.getExpired());
+                    expiredCount++;
+
+                    logger.info("Marked trade {} as expired (maturity date: {})",
+                            trade.getTradeId(), trade.getMaturityDate());
                 }
             }
 
-            logger.info("Expiry check completed. Expired trades: {}", expiredCount);
+            logger.info("Trade expiry check completed. {} trades marked as expired", expiredCount);
 
         } catch (Exception e) {
-            logger.error("Error during trade expiry check: {}", e.getMessage(), e);
+            logger.error("Error during scheduled trade expiry check: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Manual method to check and update expired trades.
+     * 
+     * This can be called programmatically if needed.
+     */
+    public void manualExpiryCheck() {
+        logger.info("Manual trade expiry check initiated...");
+        checkAndUpdateExpiredTrades();
     }
 }

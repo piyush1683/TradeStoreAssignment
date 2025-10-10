@@ -2,13 +2,11 @@ package com.sample.trade.capture;
 
 import com.sample.trade.common.model.Trade;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-@SpringBootTest
 class TradeCaptureServiceTest {
     @Test
     void consumingFromKafkaWritesToDynamoDb() {
@@ -24,6 +22,3 @@ class TradeCaptureServiceTest {
         fail("Implement Kafka consumer and DynamoDB repository to persist trade");
     }
 }
-
-
-

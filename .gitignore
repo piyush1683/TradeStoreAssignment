@@ -195,6 +195,7 @@ Thumbs.db
 *.backup
 *.old
 *.orig
+backup/
 
 # Runtime files #
 *.pid

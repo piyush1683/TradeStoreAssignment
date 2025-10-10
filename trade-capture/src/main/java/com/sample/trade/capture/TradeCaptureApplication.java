@@ -3,7 +3,6 @@ package com.sample.trade.capture;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sample.trade.common.store.TradeStore;
-import com.sample.trade.common.validation.TradeValidationService;
 import com.sample.trade.validationstorage.service.TradeProjectionService;
 import com.sample.trade.validationstorage.service.TradeProjectionServiceImpl;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -25,6 +24,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.Validation;
 
 @SpringBootApplication
 public class TradeCaptureApplication {
@@ -100,13 +103,13 @@ public class TradeCaptureApplication {
     }
 
     @Bean
-    public TradeValidationService tradeValidationService(TradeStore tradeStore) {
-        return new TradeValidationService(tradeStore);
+    public Validator validator() {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        return factory.getValidator();
     }
 
     @Bean
-    public TradeProjectionService tradeProjectionService(TradeStore tradeStore,
-            TradeValidationService tradeValidationService) {
-        return new TradeProjectionServiceImpl(tradeStore, tradeValidationService);
+    public TradeProjectionService tradeProjectionService(TradeStore tradeStore, Validator validator) {
+        return new TradeProjectionServiceImpl(tradeStore, validator);
     }
 }

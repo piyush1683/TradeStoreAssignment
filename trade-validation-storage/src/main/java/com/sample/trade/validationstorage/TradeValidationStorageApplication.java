@@ -1,7 +1,6 @@
 package com.sample.trade.validationstorage;
 
 import com.sample.trade.common.store.TradeStore;
-import com.sample.trade.common.validation.TradeValidationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,6 +8,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.Validation;
 
 @SpringBootApplication
 @EnableScheduling
@@ -43,7 +46,8 @@ public class TradeValidationStorageApplication {
     }
 
     @Bean
-    public TradeValidationService tradeValidationService(TradeStore tradeStore) {
-        return new TradeValidationService(tradeStore);
+    public Validator validator() {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        return factory.getValidator();
     }
 }
